@@ -13,7 +13,7 @@ async function saveToDatabase(){
  if(cloudSavePending)return;
  try{
  if(!communityUser)throw Error('Database connection is not ready. Your deck is still in the editor.');
- const username=$('creatorName').value.trim();if(!username){$('creatorName').focus();throw Error('Choose a username before saving.');}
+ const username=communityUser.username;if(!username){$('creatorName').focus();throw Error('Choose a username before saving.');}
  if(!Object.keys(chosen).length)throw Error('Add at least one card before saving.');
  const d=deck();const values={...d,creator_name:username,owner_id:communityUser.id};
  cloudSavePending=true;$('save').disabled=true;$('publishCommunity').disabled=true;

@@ -33,7 +33,7 @@ async function saveToDatabase(){
  const result=editingShared?await communityClient.from('decklists_decks').update(values).eq('id',editingShared).eq('owner_id',communityUser.id).select('id').single():await communityClient.from('decklists_decks').insert(values).select('id').single();
  if(result.error)throw result.error;editingShared=result.data.id;
  const favorite=await communityClient.from('decklists_stars').upsert({profile_id:communityUser.id,deck_id:editingShared},{onConflict:'profile_id,deck_id'});
- if(favorite.error)throw Error('Deck saved, but automatic starring failed: '+favorite.error.message+'. You can star it from the Decks page.');
+ if(favorite.error)throw Error('Deck saved, but automatic favoriting failed: '+favorite.error.message+'. You can favorite it from the Decks page.');
  const id='cloud-'+editingShared;const local={...d,id,vote:0};saved=saved.filter(x=>x.id!==id);saved.unshift(local);editing=id;persist();try{localStorage.setItem('origins-creator-name',username)}catch{}
  await loadCommunity();renderDecks();message('Saved to the database as '+username+'. '+(completeDeck(d)?'Ready to copy into Origins.':'Saved as a draft.'));$('save').textContent='Save changes';
  }catch(e){message(e.message)}finally{cloudSavePending=false;$('save').disabled=false;$('publishCommunity').disabled=false}

@@ -17,17 +17,15 @@ function renderCommunity(){const term=$('communitySearch').value.toLowerCase(),s
 }
 $('communitySearch').oninput=renderCommunity; $('communitySort').onchange=renderCommunity;
 document.addEventListener('click',async e=>{
- const b=e.target.closest('button');if(!b)return;const x=b.dataset;if(b.id==='clear'||b.id==='importGame'||x.edit){editingShared=null;$('publishCommunity').textContent='Share deck with group'}
+ const b=e.target.closest('button');if(!b)return;const x=b.dataset;
+ if(b.id==='clear'||b.id==='importGame')editingShared=null;
  try{
- if(x.communityEdit||x.communityOpen){x.communityOpen=x.communityEdit||x.communityOpen;editingShared=x.communityEdit||null;const d=communityRows.find(d=>d.id===x.communityOpen);const validated=decode(encode(d));chosen=validated.cards;editing=null;$('name').value=validated.name;$('notes').value=validated.notes;showView('builder');render();$('publishCommunity').textContent=editingShared?'Update shared deck':'Share deck with group';message(editingShared?'Editing your shared deck. Update it to keep its link and votes.':'Shared deck opened as a copy.');}
+ if(x.communityEdit||x.communityOpen){const id=x.communityEdit||x.communityOpen;editingShared=x.communityEdit||null;const d=communityRows.find(d=>d.id===id);const validated=decode(encode(d));chosen=validated.cards;editing=null;$('name').value=validated.name;$('notes').value=validated.notes;showView('builder');render();$('save').textContent=editingShared?'Save changes':'Save deck';message(editingShared?'Editing your shared deck.':'Opened as a copy.');}
  if(x.communityVote){if(!communityUser)throw Error('Community connection is not ready.');const row=communityRows.find(d=>d.id===x.communityVote);const old=row.decklists_votes?.find(v=>v.user_id===communityUser.id);let response;if(old?.value===+x.value)response=await communityClient.from('decklists_votes').delete().eq('deck_id',row.id).eq('user_id',communityUser.id);else response=await communityClient.from('decklists_votes').upsert({deck_id:row.id,user_id:communityUser.id,value:+x.value},{onConflict:'deck_id,user_id'});if(response.error)throw response.error;await loadCommunity();}
  if(x.communityLink){const url=new URL(location.href);url.hash='';url.searchParams.set('shared',x.communityLink);try{await navigator.clipboard.writeText(url.href);communityStatus('Deck link copied.')}catch{prompt('Copy deck link:',url.href)}}
  if(x.communityDelete&&confirm('Delete your shared deck?')){const {error}=await communityClient.from('decklists_decks').delete().eq('id',x.communityDelete).eq('owner_id',communityUser.id);if(error)throw error;await loadCommunity();}
  }catch(err){communityError(err)}
 });
-document.getElementById('publishCommunity').onclick=async()=>{
- try{if(!communityUser)throw Error('Community storage is not configured yet.');const d=deck();checkGameDeck(d.cards);const creator_name=$('creatorName').value.trim();if(!creator_name)throw Error('Add your display name before sharing.');try{localStorage.setItem('origins-creator-name',creator_name)}catch{}const values={...d,creator_name,owner_id:communityUser.id};const response=editingShared?await communityClient.from('decklists_decks').update(values).eq('id',editingShared).eq('owner_id',communityUser.id):await communityClient.from('decklists_decks').insert(values);const {error}=response;if(error)throw error;await loadCommunity();message(editingShared?'Shared deck updated.':'Deck shared with the group.');editingShared=null;$('publishCommunity').textContent='Share deck with group';}catch(e){message(e.message)}
-};
 document.getElementById('refreshCommunity').onclick=()=>loadCommunity().catch(communityError);
 (async()=>{try{
  const c=window.DECKLISTS_CONFIG;if(!c?.publishableKey){communityStatus('Setup pending: add the Supabase publishable key and apply schema.sql. Local deck building is ready.');return}

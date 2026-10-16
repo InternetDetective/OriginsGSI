@@ -29,16 +29,16 @@ async function saveToDatabase(){
  const username=communityUser.username;if(!username){$('creatorName').focus();throw Error('Choose a username before saving.');}
  if(!Object.keys(chosen).length)throw Error('Add at least one card before saving.');
  const d=deck();const values={...d,creator_name:username,owner_id:communityUser.id};
- cloudSavePending=true;$('save').disabled=true;$('publishCommunity').disabled=true;
+ cloudSavePending=true;$('save').disabled=true;
  const result=editingShared?await communityClient.from('decklists_decks').update(values).eq('id',editingShared).eq('owner_id',communityUser.id).select('id').single():await communityClient.from('decklists_decks').insert(values).select('id').single();
  if(result.error)throw result.error;editingShared=result.data.id;
  const favorite=await communityClient.from('decklists_stars').upsert({profile_id:communityUser.id,deck_id:editingShared},{onConflict:'profile_id,deck_id'});
  if(favorite.error)throw Error('Deck saved, but automatic favoriting failed: '+favorite.error.message+'. You can favorite it from the Decks page.');
  const id='cloud-'+editingShared;const local={...d,id,vote:0};saved=saved.filter(x=>x.id!==id);saved.unshift(local);editing=id;persist();try{localStorage.setItem('origins-creator-name',username)}catch{}
- await loadCommunity();renderDecks();message('Saved to the database as '+username+'. '+(completeDeck(d)?'Ready to copy into Origins.':'Saved as a draft.'));$('save').textContent='Save changes';
- }catch(e){message(e.message)}finally{cloudSavePending=false;$('save').disabled=false;$('publishCommunity').disabled=false}
+ await loadCommunity();message('Saved to the database as '+username+'. '+(completeDeck(d)?'Ready to copy into Origins.':'Saved as a draft.'));$('save').textContent='Save changes';
+ }catch(e){message(e.message)}finally{cloudSavePending=false;$('save').disabled=false;}
 }
-$('save').onclick=saveToDatabase;$('publishCommunity').onclick=saveToDatabase;
+$('save').onclick=saveToDatabase;
 const previousLoadCommunity=loadCommunity;
-loadCommunity=async function(){await previousLoadCommunity();if(!communityUser)return;for(const d of communityRows.filter(d=>d.owner_id===communityUser.id)){const id='cloud-'+d.id;saved=saved.filter(x=>x.id!==id);saved.push({name:d.name,notes:d.notes,cards:normalize(d.cards),id,vote:0})}renderDecks();renderCommunity()};
+loadCommunity=async function(){await previousLoadCommunity();if(!communityUser)return;for(const d of communityRows.filter(d=>d.owner_id===communityUser.id)){const id='cloud-'+d.id;saved=saved.filter(x=>x.id!==id);saved.push({name:d.name,notes:d.notes,cards:normalize(d.cards),id,vote:0})}renderCommunity()};
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.edit){editingShared=b.dataset.edit.startsWith('cloud-')?b.dataset.edit.slice(6):null}if(b.id==='clear'||b.id==='importGame')$('save').textContent='Save deck';});
